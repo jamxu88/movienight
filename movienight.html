@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html  >
+<head>
+  
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+  <link rel="shortcut icon" href="assets/images/logo.png" type="image/x-icon">
+  <meta name="description" content="">
+  
+  
+  <title>Movie Night</title>
+  <link rel="stylesheet" href="assets/tether/tether.min.css">
+  <link rel="stylesheet" href="assets/bootstrap/css/bootstrap.min.css">
+  <link rel="stylesheet" href="assets/bootstrap/css/bootstrap-grid.min.css">
+  <link rel="stylesheet" href="assets/bootstrap/css/bootstrap-reboot.min.css">
+  <link rel="stylesheet" href="assets/animatecss/animate.css">
+  <link rel="stylesheet" href="assets/theme/css/style.css">
+  <link rel="preload" as="style" href="assets/mobirise/css/mbr-additional.css"><link rel="stylesheet" href="assets/mobirise/css/mbr-additional.css" type="text/css">
+  
+  
+  
+  
+</head>
+<body>
+
+<section id='top-1'></section>
+
+
+  
+  <section class="header2 cid-ssayHfYK5K mbr-fullscreen mbr-parallax-background" id="header2-9">
+
+    
+
+    <div class="mbr-overlay" style="opacity: 0.8; background-color: rgb(0, 0, 0);"></div>
+
+    <div class="container">
+        <div class="row">
+            <div class="col-12 col-lg-7">
+                <h1 class="mbr-section-title mbr-fonts-style mb-3 display-1">Virtual Movie Night 🎥 </h1>
+                <div class="mbr-section-btn mt-3"><a class="btn btn-white display-4" onclick="createRoom()">Create a Room</a></div>
+            </div>
+        </div>
+    </div>
+</section>
+<script src="https://cdn.socket.io/4.0.0/socket.io.min.js" integrity="sha384-DkkWv9oJFWLIydBXXjkBWnG1/fuVhw8YPBq37uvvD6WSYRFRqr21eY5Dg9ZhmWdy" crossorigin="anonymous"></script>
+  <script>
+    var socket = io();
+    async function createRoom() {
+      var ID = Math.floor(Math.random() * (999999999999-100000000000) + 100000000000)
+      console.log('ID: '+ ID)
+      await socket.emit('createRoom',ID,socket.id)
+      document.cookie = `hostID=${socket.id}`
+      window.location.href =`./player.html?id=${ID}`;
+    }
+  </script>
+  <input name="animation" type="hidden">
+  </body>
+</html>

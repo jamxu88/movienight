@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html  >
+<head>
+  
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+  <link rel="shortcut icon" href="assets/images/logo.png" type="image/x-icon">
+  <meta name="description" content="">
+  
+  
+  <title>Player</title>
+  <link rel="stylesheet" href="assets/tether/tether.min.css">
+  <link rel="stylesheet" href="assets/bootstrap/css/bootstrap.min.css">
+  <link rel="stylesheet" href="assets/bootstrap/css/bootstrap-grid.min.css">
+  <link rel="stylesheet" href="assets/bootstrap/css/bootstrap-reboot.min.css">
+  <link rel="stylesheet" href="assets/animatecss/animate.css">
+  <link rel="stylesheet" href="assets/theme/css/style.css">
+  <link rel="preload" as="style" href="assets/mobirise/css/mbr-additional.css"><link rel="stylesheet" href="assets/mobirise/css/mbr-additional.css" type="text/css">
+  
+  
+  
+  
+</head>
+<body>
+
+<section id='top-1'></section>
+  <section class="form2 cid-ssdHSbBEH2" id="form2-e">
+    
+    <div class="align-center container-fluid">
+        <div class="row justify-content-center">
+            <div class="col-lg-8 mx-auto mbr-form" data-form-type="formoid">
+                <form action='javascript:validateLink()' class="mbr-form form-with-styler" data-form-title="Form Name" id="linkinput">
+                    <div class="dragArea row">
+                        <div class="col-lg col-md col-12 form-group" data-for="ytlink">
+                            <input type="text" name="ytlink" placeholder="YouTube Video Link" data-form-field="ytlink" class="form-control" id="ytlink">
+                        </div>
+                        <div class="mbr-section-btn col-md-auto col"><button type="button" onclick="validateLink()" class="btn btn-white display-4">Start</button><div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="video4 cid-ssazuxcU7q" id="video4-b">
+    
+    
+    <div>
+        <div class="title-wrapper mb-5">
+            <h4 class="mbr-section-title mbr-fonts-style mb-0 display-5" id="connectionStatus">Status: Enter a YouTube URL</h4>
+        </div>
+        <div class="title-wrapper mb-5">
+            <h4 class="mbr-section-title mbr-fonts-style mb-0 display-5" id="roomLink"></h4>
+        </div>
+        <div class="row align-items-center">
+            <div class="col-12 col-lg-8 video-block" id="player"></div>
+            <!--
+            <div class="col-12 col-lg-8 video-block">
+                <div class="video-wrapper"><iframe id = "player" class="mbr-embedded-video" src="https://www.youtube.com/embed/JfJYHfrOGgQ?rel=0&amp;amp;showinfo=0&amp;autoplay=0&amp;loop=0" width="1280" height="720" frameborder="0" gesture="media" allow="autoplay; encrypted-media" enablejsapi="true" allowfullscreen></iframe></div>
+                
+            </div>-->
+            <div class="col-12 col-lg mbr-section-title2 mbr-fonts-style mb-0 display-55">
+                <div id = 'chat'>
+                    <p id='chatmessage'></p>
+                </div>
+                <form action='javascript:sendChat()' class="mbr-form form-with-styler" data-form-title="Form Name" id="msginput">
+                    <div class="dragArea row">
+                        <div class="col-lg col-md col-12 form-group" data-for="msgcnt">
+                            <input type="text" autocomplete="off" name="msgcnt" placeholder="Send a chat message..." data-form-field="msgcnt" class="form-control2" id="msgcnt">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+        </div>
+    </div>
+</section>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="https://cdn.socket.io/4.0.0/socket.io.min.js" integrity="sha384-DkkWv9oJFWLIydBXXjkBWnG1/fuVhw8YPBq37uvvD6WSYRFRqr21eY5Dg9ZhmWdy" crossorigin="anonymous"></script>
+    <script async>
+        var socket = io();
+        const urlParams = new URLSearchParams(window.location.search);
+        const roomID = urlParams.get('id');
+        var host; 
+        var interval = setInterval(function() {
+            if(document.readyState === 'complete') {
+                clearInterval(interval);
+                socket.emit('userConnected',roomID,socket.id,document.cookie)
+            }    
+        }, 100);
+        socket.on('loadPlayer',(hostID) => {
+            host = hostID
+            if(document.cookie.includes(hostID)) {
+                document.getElementById('connectionStatus').innerHTML = 'Status: Player Ready, Enter YouTube URL'
+                document.getElementById('roomLink').innerText = "Share your room link: "+ window.location.href
+            }else {
+                document.getElementById('connectionStatus').innerHTML = 'Status: Watching Host'
+                document.getElementById('roomLink').innerText = "You are in a watch party."
+            }
+        }) 
+        
+        console.log('rab')
+
+        var tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        var firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+        var player;
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('player', {
+                height: '720',
+                width: '1280',
+                videoId: 'a5YAGYyuA0U',
+                events: {
+                    'onStateChange': onPlayerStateChange
+                },
+                playerVars: {
+
+                }
+            });
+        }
+        var hostPlayerTime;
+        var syncInterval = setInterval(function() {
+            socket.emit('intervalSync',roomID)
+            if(!(hostPlayerTime-1< player.getCurrentTime() < hostPlayerTime+1)) {
+                socket.emit('requestSync',roomID)
+                clearInterval(syncInterval);
+            }
+                
+        }, 5000);
+        socket.on('intervalData',(id) => {
+            if(id != roomID || !document.cookie.includes(host)) return;
+            socket.emit('returnIntervalData',id,player.getCurrentTime())
+        })
+        socket.on('recieveIntervalData',(id,time)=> {
+            if(id != roomID || document.cookie.includes(host)) return;
+            hostPlayerTime = time;
+        })
+        var done = false;
+        var prevEvent = 3;
+        function onPlayerStateChange(event) {
+            console.log(event.data)
+            console.log(host)
+            console.log(document.cookie)
+            switch(event.data) {
+                case -1:
+                    if(document.cookie.includes(host)) {
+                        socket.emit('video',roomID)
+                        console.log('Host loaded video')
+                        document.getElementById('connectionStatus').innerHTML = 'Status: Video Loaded'
+                        //socket.emit('requestSync',roomID)
+                    }else {
+                        socket.emit('requestSync',roomID)
+                    }
+                    break;
+                case 1:
+                    if(document.cookie.includes(host)) {
+                        socket.emit('play',roomID)
+                        console.log('Host played video')
+                        document.getElementById('connectionStatus').innerHTML = 'Status: Playing video'
+                        socket.emit('requestSync',roomID)
+                    }else {
+                        //player.pauseVideo()
+                        //socket.emit('requestSync',roomID)
+                    }
+                    break;
+                case 2:
+                    if(document.cookie.includes(host)) {
+                        socket.emit('pause',roomID)
+                        console.log('Host paused video')
+                        socket.emit('requestSync',roomID)
+                        document.getElementById('connectionStatus').innerHTML = 'Status: Paused Video'
+                    }else {
+                        //player.playVideo()
+                        socket.emit('requestSync',roomID)
+                    }
+                    break;
+                case 3:
+                    if(document.cookie.includes(host)) {
+                        socket.emit('buffering',roomID)
+                        socket.emit('play',roomID)
+                        console.log('Host is buffering')
+                        document.getElementById('connectionStatus').innerHTML = 'Status: Buffering... Attempting to sync...'
+                        socket.emit('requestSync',roomID)
+                    }else {
+                        //socket.emit('requestSync',roomID)
+                    } 
+                    break;
+                case 5:
+                    if(document.cookie.includes(host)) {
+                        socket.emit('video',roomID)
+                        console.log('Host changed video')
+                        document.getElementById('connectionStatus').innerHTML = 'Status: Video Queued'
+                        player.playVideo()
+                    }else {
+                        break;
+                    } 
+                    break;
+                default:
+                    break;
+
+            }
+        }
+
+        function sendChat() {
+            var msgcnt = document.getElementById('msginput')[0].value;
+            document.getElementById('msginput')[0].value = ""
+            if(msgcnt == '' || msgcnt.replace(' ','') == '') return;
+            socket.emit('recieveMessage',roomID,msgcnt,document.cookie)
+        }
+        var a = 0;
+        socket.on('displayMessage',(id,messageContent) => {
+            if(id != roomID) return;
+            var chatBox = document.getElementById('chat')
+            var clone = chatBox.cloneNode('chatmessage')
+            clone.innerText = messageContent
+            if(chatBox.children.length > 30) {
+                var list = document.getElementById("chat")
+                list.removeChild(list.childNodes[0])
+                $(clone).hide().appendTo($(chatBox)).fadeIn()
+            }else {
+                $(clone).hide().appendTo($(chatBox)).fadeIn()
+            } 
+        })
+        socket.on('hostConnectEvent', (id) => {
+            if(id != roomID) return;
+            var chatBox = document.getElementById('chat')
+            var clone = chatBox.cloneNode('chatmessage')
+            clone.innerHTML = '<b>[THE HOST HAS CONNNECTED]</b>'
+            if(chatBox.children.length > 30) {
+                var list = document.getElementById("chat")
+                list.removeChild(list.childNodes[0])
+                $(clone).hide().appendTo($(chatBox)).fadeIn()
+            }else {
+                $(clone).hide().appendTo($(chatBox)).fadeIn()
+            } 
+        })
+        socket.on('userConnectEvent', (id) => {
+            if(id != roomID) return;
+            var chatBox = document.getElementById('chat')
+            var clone = chatBox.cloneNode('chatmessage')
+            clone.innerHTML = '<b>[A USER HAS CONNNECTED]</b>'
+            if(chatBox.children.length > 30) {
+                var list = document.getElementById("chat")
+                list.removeChild(list.childNodes[0])
+                $(clone).hide().appendTo($(chatBox)).fadeIn()
+            }else {
+                $(clone).hide().appendTo($(chatBox)).fadeIn()
+            } 
+        })
+        socket.on('globalPause', (id) => {
+            if(id != roomID) return;
+            player.pauseVideo()
+            var chatBox = document.getElementById('chat')
+            var clone = chatBox.cloneNode('chatmessage')
+            clone.innerHTML = '<b>[A USER HAS DISCONNNECTED]</b>'
+            if(chatBox.children.length > 30) {
+                var list = document.getElementById("chat")
+                list.removeChild(list.childNodes[0])
+                $(clone).hide().appendTo($(chatBox)).fadeIn()
+            }else {
+                $(clone).hide().appendTo($(chatBox)).fadeIn()
+            }
+            document.getElementById('connectionStatus').innerHTML = 'Status: A user has disconnected, automatically paused.' 
+        })
+        socket.on('hostPaused', (id)=> {
+            if(id != roomID || document.cookie.includes(host)) return;
+            console.log('Pausing client video')
+            document.getElementById('connectionStatus').innerHTML = 'Status: Host paused'
+            player.pauseVideo()
+        })
+        socket.on('hostPlayed', (id)=> {
+            if(id != roomID || document.cookie.includes(host)) return;
+            console.log('Playing client video')
+            document.getElementById('connectionStatus').innerHTML = 'Status: Host is playing'
+            player.playVideo()
+            el.dispatchEvent(new Event('focus'));
+            el.dispatchEvent(new KeyboardEvent('keypress',{'key':'k'}));
+            
+        })
+        socket.on('hostVideo', (id,videoID)=> {
+            if(id != roomID || document.cookie.includes(host)) return;
+            console.log('Changing client video')
+            document.getElementById('connectionStatus').innerHTML = 'Status: Host queued a new video'
+            player.cueVideoById(videoID)
+        })
+        socket.on('retireveHostData', (id) => {
+            if(id != roomID || !document.cookie.includes(host)) return;
+            console.log('Sending current Host Sync')
+            socket.emit('returnSync',id,player.getCurrentTime())
+        })
+        socket.on('sync', (id,time) => {
+            if(id != roomID || document.cookie.includes(host)) return;
+            console.log('Syncing client')
+            //document.getElementById('connectionStatus').innerHTML = 'Status: Video is playing... Syncing with host...'
+            player.seekTo(time)
+        })
+        function stopVideo() {
+            player.stopVideo();
+        }
+        async function validateLink(link) {
+            var regExp = /^.*(youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            var url = document.getElementById('linkinput')[0].value;
+            var match = url.match(regExp);
+            if(!document.cookie.includes(host)) {
+                alert('You are not the host of this room.')
+                return;
+            }else {
+                if (match && match[2].length == 11) {
+                    var response = await fetch(`https://www.youtube.com/oembed?format=json&url=https://www.youtube.com/watch?v=${match[2]}`)
+                    player.cueVideoById(match[2],0)
+                    document.getElementById('connectionStatus').innerHTML = 'Status: Connected & Video Loaded'
+                    socket.emit('video',roomID,match[2])
+                } else {
+                    //tell user that it is not a valid yt video
+                    document.getElementById('connectionStatus').innerHTML = 'Status: Invalid YouTube URL'
+                    console.log('Invalid YT Url')
+                    return false;
+                }
+            }
+            
+        }
+      </script>
+  <input name="animation" type="hidden">
+  </body>
+</html> 
